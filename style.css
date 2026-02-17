@@ -185,7 +185,7 @@ body::before {
 /* ====== SIDEBAR ====== */
 .sidebar {
     width: var(--sidebar-width);
-    background: #161b27;
+    background: var(--bg-secondary);
     border-right: 1px solid var(--border-blue);
     padding: 20px 12px;
     position: fixed;
@@ -405,7 +405,8 @@ body::before {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    opacity: 0.15;
+    filter: blur(20px);
+    opacity: 0.3;
 }
 
 .stat-card.present::after {
@@ -1070,16 +1071,15 @@ body::before {
 }
 
 /* ====== SIDEBAR OVERLAY ====== */
-#sidebar-overlay {
+.sidebar-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 199;
-    pointer-events: auto;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    -webkit-tap-highlight-color: transparent;
 }
-
-#sidebar-overlay.active {
+.sidebar-overlay.active {
     display: block;
 }
 
@@ -1096,23 +1096,22 @@ body::before {
         display: none;
     }
 
-    /* Sidebar: ซ่อนไว้ซ้าย แล้ว slide เข้ามา */
+    /* Sidebar slides off-screen by default */
     .sidebar {
         transform: translateX(-100%);
         -webkit-transform: translateX(-100%);
-        transition: transform 0.28s ease;
-        -webkit-transition: -webkit-transform 0.28s ease;
-        z-index: 200;
+        transition: transform 0.25s ease;
+        -webkit-transition: transform 0.25s ease;
+        z-index: 100;
         background: #161b27;
         box-shadow: none;
-        pointer-events: auto;
     }
 
-    /* Sidebar เปิดแล้ว */
+    /* Sidebar slides in when .open is added */
     .sidebar.open {
         transform: translateX(0);
         -webkit-transform: translateX(0);
-        box-shadow: 4px 0 24px rgba(0,0,0,0.7);
+        box-shadow: 6px 0 24px rgba(0,0,0,0.6);
     }
 
     /* Main takes full width — no sidebar offset */
