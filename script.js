@@ -144,34 +144,27 @@ function updateBadge() {
 }
 
 function updateDashboard() {
-    const today = document.getElementById('checkin-date').value;
-    const todayAtt = appData.attendance[today] || [];
+    // ใช้วันที่จริงของวันนี้เสมอ ไม่ใช้ input
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const todayAtt = appData.attendance[todayStr] || [];
 
-    // นับสถิติวันนี้สำหรับ card หน้าหลัก
+    // นับแค่วันนี้ — แต่ละคนนับแค่ 1 ครั้ง (ใช้ student_id ล่าสุด)
+    const seen = {};
+    todayAtt.forEach(a => { seen[a.student_id] = a.status; }); // ถ้าซ้ำ ใช้อันหลัง
+
     let p = 0, l = 0, lv = 0, ab = 0;
-    todayAtt.forEach(a => {
-        if (a.status === 'present') p++;
-        else if (a.status === 'late') l++;
-        else if (a.status === 'leave') lv++;
-        else if (a.status === 'absent') ab++;
+    Object.values(seen).forEach(st => {
+        if (st === 'present') p++;
+        else if (st === 'late') l++;
+        else if (st === 'leave') lv++;
+        else if (st === 'absent') ab++;
     });
 
-    // ถ้าวันนี้ไม่มีข้อมูล ให้นับจากทุกวันแทน
-    if (todayAtt.length === 0) {
-        Object.values(appData.attendance).forEach(dayRecs => {
-            dayRecs.forEach(a => {
-                if (a.status === 'present') p++;
-                else if (a.status === 'late') l++;
-                else if (a.status === 'leave') lv++;
-                else if (a.status === 'absent') ab++;
-            });
-        });
-    }
-
-    document.getElementById('dash-present').textContent = p;
-    document.getElementById('dash-late').textContent = l;
-    document.getElementById('dash-leave').textContent = lv;
-    document.getElementById('dash-absent').textContent = ab;
+    document.getElementById('dash-present').textContent = p || '—';
+    document.getElementById('dash-late').textContent    = l || '—';
+    document.getElementById('dash-leave').textContent   = lv || '—';
+    document.getElementById('dash-absent').textContent  = ab || '—';
 
     const days = Object.keys(appData.attendance).length;
     document.getElementById('dash-checkin-days').textContent = days > 0 ? days + ' วัน' : '—';
@@ -446,30 +439,30 @@ function renderStudentList() {
         const rec = todayAtt.find(a => a.student_id === s.id);
         const status = rec ? rec.status : null;
 
-        const activePresent = status === 'present';
-        const activeAbsent  = status === 'absent';
+        const btns = [
+            { st:'present', label:'มา',   icon:'fa-check',    color:'var(--success)', offBg:'rgba(16,185,129,0.1)',  border:'rgba(16,185,129,0.5)' },
+            { st:'late',    label:'สาย',  icon:'fa-clock',    color:'var(--warning)', offBg:'rgba(245,158,11,0.1)',  border:'rgba(245,158,11,0.5)' },
+            { st:'leave',   label:'ลา',   icon:'fa-file-alt', color:'var(--info)',    offBg:'rgba(6,182,212,0.1)',   border:'rgba(6,182,212,0.5)'  },
+            { st:'absent',  label:'ขาด', icon:'fa-times',    color:'var(--danger)',  offBg:'rgba(239,68,68,0.1)',   border:'rgba(239,68,68,0.4)'  },
+        ].map(b => {
+            const active = status === b.st;
+            return `<button id="btn-${b.st}-${s.id}" onclick="quickStatus('${s.id}','${b.st}','${todayStr}')"
+                style="background:${active ? b.color : b.offBg};
+                       border:1px solid ${b.border};
+                       color:${active ? '#fff' : b.color};
+                       padding:5px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:${active?'700':'600'};">
+                <i class="fas ${b.icon}"></i> ${b.label}
+            </button>`;
+        }).join('');
 
         html += `
       <tr id="row-${s.id}">
         <td><span class="student-num">${s.number || '—'}</span></td>
         <td style="font-weight:500">${s.name}</td>
         <td><span style="background:rgba(59,130,246,0.15);color:var(--accent-blue-bright);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${s.class}</span></td>
-        <td style="text-align:center;">
-          <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-            <button id="btn-present-${s.id}" onclick="quickStatus('${s.id}','present','${todayStr}')"
-              style="background:${activePresent ? 'var(--success)' : 'rgba(16,185,129,0.1)'};
-                     border:1px solid rgba(16,185,129,0.5);
-                     color:${activePresent ? '#fff' : 'var(--success)'};
-                     padding:5px 12px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">
-              <i class="fas fa-check"></i> มา
-            </button>
-            <button id="btn-absent-${s.id}" onclick="quickStatus('${s.id}','absent','${todayStr}')"
-              style="background:${activeAbsent ? 'var(--danger)' : 'rgba(239,68,68,0.1)'};
-                     border:1px solid rgba(239,68,68,0.4);
-                     color:${activeAbsent ? '#fff' : 'var(--danger)'};
-                     padding:5px 12px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">
-              <i class="fas fa-times"></i> ไม่มา
-            </button>
+        <td>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            ${btns}
           </div>
         </td>
         <td style="text-align:right; padding-right:16px;">
@@ -704,31 +697,40 @@ async function resetAllData() {
         showConfirmButton: false
     });
 }
-// ===== QUICK STATUS (มา/ไม่มา จากหน้ารายชื่อ) =====
+// ===== QUICK STATUS (มา/สาย/ลา/ขาด จากหน้ารายชื่อ) =====
 async function quickStatus(studentId, status, date) {
     const student = appData.students.find(s => s.id === studentId);
     if (!student) return;
 
-    // อัปเดต local
+    // อัปเดต local — แทนที่ค่าเก่า ไม่เพิ่มซ้ำ
     if (!appData.attendance[date]) appData.attendance[date] = [];
     const idx = appData.attendance[date].findIndex(a => a.student_id === studentId);
     const rec = { student_id: studentId, status, name: student.name, class: student.class, number: student.number };
-    if (idx >= 0) appData.attendance[date][idx] = rec;
-    else appData.attendance[date].push(rec);
+    if (idx >= 0) appData.attendance[date][idx] = rec;  // แทนที่
+    else appData.attendance[date].push(rec);             // เพิ่มใหม่
 
-    // อัปเดตปุ่มทันทีโดยไม่ render ใหม่ทั้งหมด
-    const btnP = document.getElementById(`btn-present-${studentId}`);
-    const btnA = document.getElementById(`btn-absent-${studentId}`);
-    if (btnP) {
-        btnP.style.background = status === 'present' ? 'var(--success)' : 'rgba(16,185,129,0.1)';
-        btnP.style.color = status === 'present' ? '#fff' : 'var(--success)';
-    }
-    if (btnA) {
-        btnA.style.background = status === 'absent' ? 'var(--danger)' : 'rgba(239,68,68,0.1)';
-        btnA.style.color = status === 'absent' ? '#fff' : 'var(--danger)';
-    }
+    // อัปเดตปุ่มทั้ง 4 ทันที
+    const statuses = ['present','late','leave','absent'];
+    const colors = {
+        present: { on: 'var(--success)',  off: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.5)'  },
+        late:    { on: 'var(--warning)',  off: 'rgba(245,158,11,0.1)',  border: 'rgba(245,158,11,0.5)'  },
+        leave:   { on: 'var(--info)',     off: 'rgba(6,182,212,0.1)',   border: 'rgba(6,182,212,0.5)'   },
+        absent:  { on: 'var(--danger)',   off: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.4)'   },
+    };
+    statuses.forEach(st => {
+        const btn = document.getElementById(`btn-${st}-${studentId}`);
+        if (!btn) return;
+        const active = st === status;
+        btn.style.background = active ? colors[st].on : colors[st].off;
+        btn.style.color      = active ? '#fff' : colors[st].on;
+        btn.style.borderColor = colors[st].border;
+        btn.style.fontWeight  = active ? '700' : '600';
+    });
 
-    showToast(`${student.name} — ${status === 'present' ? '✅ มา' : '❌ ไม่มา'}`, 'success');
+    const labels = { present: '✅ มา', late: '⏰ สาย', leave: '📄 ลา', absent: '❌ ขาด' };
+    showToast(`${student.name} — ${labels[status]}`, 'success');
+
+    // อัปเดต dashboard ใหม่ทั้งหมด (นับจาก data จริง ไม่สะสม)
     updateDashboard();
 
     // ส่งไป Google Sheets
