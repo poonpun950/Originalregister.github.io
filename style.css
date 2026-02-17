@@ -1112,7 +1112,7 @@ body::before {
     .sidebar.open {
         transform: translateX(0);
         -webkit-transform: translateX(0);
-        box-shadow: 4px 0 24px rgba(0,0,0,0.7);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.7);
     }
 
     /* Main takes full width — no sidebar offset */
