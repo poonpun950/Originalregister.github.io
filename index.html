@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบเช็คชื่อนักเรียน</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.all.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.css">
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <!-- TOP NAV -->
+    <nav class="topnav">
+        <button class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="logo-wrap">
+            <div class="logo-icon"><i class="fas fa-graduation-cap" style="color:white"></i></div>
+            <div class="logo-text">
+                <span class="logo-title">ระบบเช็คชื่อ</span>
+                <span class="logo-sub">ATTENDANCE SYSTEM</span>
+            </div>
+        </div>
+        <div class="nav-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="ค้นหานักเรียน..." id="globalSearch" onkeyup="handleSearch(this.value)">
+        </div>
+        <div class="nav-actions">
+            <button class="nav-btn" onclick="loadStudentsForStats()">
+                <i class="fas fa-sync-alt"></i> รีเฟรช
+            </button>
+            <button class="nav-btn" onclick="exportData()">
+                <i class="fas fa-download"></i> ส่งออก
+            </button>
+        </div>
+    </nav>
+
+    <!-- LAYOUT -->
+    <div class="layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-section-label">เมนูหลัก</div>
+
+            <div class="nav-item active" onclick="showPage('dashboard', this)">
+                <div class="nav-item-icon"><i class="fas fa-home"></i></div>
+                หน้าหลัก
+            </div>
+
+            <div class="nav-item" onclick="showPage('checkin', this)">
+                <div class="nav-item-icon"><i class="fas fa-clipboard-check"></i></div>
+                เช็คชื่อนักเรียน
+            </div>
+
+            <div class="nav-item" onclick="showPage('statistics', this)">
+                <div class="nav-item-icon"><i class="fas fa-chart-bar"></i></div>
+                สถิติการเข้าเรียน
+            </div>
+
+            <div class="nav-item" onclick="showPage('addstudent', this)">
+                <div class="nav-item-icon"><i class="fas fa-user-plus"></i></div>
+                เพิ่มรายชื่อนักเรียน
+            </div>
+
+            <div class="sidebar-section-label" style="margin-top:12px">ข้อมูล</div>
+
+            <div class="nav-item" onclick="showPage('students-list', this)">
+                <div class="nav-item-icon"><i class="fas fa-users"></i></div>
+                รายชื่อนักเรียน
+                <span class="nav-badge" id="total-badge">0</span>
+            </div>
+
+            <div style="margin-top: auto; padding: 12px 8px 0;">
+                <div style="font-size:10px; color: var(--text-muted); line-height:1.6;">
+                    <i class="fas fa-circle" style="color: var(--success); font-size:6px; margin-right:4px;"></i>
+                    ระบบออนไลน์ · เชื่อมต่อ Google Sheets
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="main">
+
+            <!-- PAGE: DASHBOARD -->
+            <div class="page active" id="page-dashboard">
+                <div class="page-header">
+                    <div class="page-title">
+                        <div class="page-title-icon"><i class="fas fa-home"></i></div>
+                        หน้าหลัก (Dashboard)
+                    </div>
+                    <div class="page-subtitle">ภาพรวมระบบเช็คชื่อนักเรียน</div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card present">
+                        <i class="fas fa-check-circle stat-icon" style="color:var(--success)"></i>
+                        <div class="stat-label"><i class="fas fa-circle" style="color:var(--success)"></i> มาเรียน</div>
+                        <div class="stat-value" id="dash-present">—</div>
+                        <div class="stat-desc">คนมาเรียนวันนี้</div>
+                    </div>
+                    <div class="stat-card late">
+                        <i class="fas fa-clock stat-icon" style="color:var(--warning)"></i>
+                        <div class="stat-label"><i class="fas fa-circle" style="color:var(--warning)"></i> มาสาย</div>
+                        <div class="stat-value" id="dash-late">—</div>
+                        <div class="stat-desc">คนมาสาย</div>
+                    </div>
+                    <div class="stat-card leave">
+                        <i class="fas fa-file-alt stat-icon" style="color:var(--info)"></i>
+                        <div class="stat-label"><i class="fas fa-circle" style="color:var(--info)"></i> ลา</div>
+                        <div class="stat-value" id="dash-leave">—</div>
+                        <div class="stat-desc">คนลาหยุด</div>
+                    </div>
+                    <div class="stat-card absent">
+                        <i class="fas fa-times-circle stat-icon" style="color:var(--danger)"></i>
+                        <div class="stat-label"><i class="fas fa-circle" style="color:var(--danger)"></i> ขาด</div>
+                        <div class="stat-value" id="dash-absent">—</div>
+                        <div class="stat-desc">คนขาดเรียน</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><i class="fas fa-bolt"></i> เมนูด่วน</div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <div class="quick-action"
+                                onclick="showPage('checkin', document.querySelector('.nav-item:nth-child(3)'))">
+                                <div class="quick-action-icon" style="background:rgba(59,130,246,0.15)"><i
+                                        class="fas fa-clipboard-check" style="color:var(--accent-blue)"></i></div>
+                                <div class="quick-action-text">
+                                    <strong>เช็คชื่อนักเรียน</strong>
+                                    <span>บันทึกการเข้าเรียนประจำวัน</span>
+                                </div>
+                                <i class="fas fa-chevron-right"
+                                    style="color:var(--text-muted); margin-left:auto; font-size:11px;"></i>
+                            </div>
+                            <div class="quick-action"
+                                onclick="showPage('statistics', document.querySelector('.nav-item:nth-child(4)'))">
+                                <div class="quick-action-icon" style="background:rgba(16,185,129,0.15)"><i
+                                        class="fas fa-chart-bar" style="color:var(--success)"></i></div>
+                                <div class="quick-action-text">
+                                    <strong>ดูสถิติ</strong>
+                                    <span>รายงานสรุปการเข้าเรียน</span>
+                                </div>
+                                <i class="fas fa-chevron-right"
+                                    style="color:var(--text-muted); margin-left:auto; font-size:11px;"></i>
+                            </div>
+                            <div class="quick-action"
+                                onclick="showPage('addstudent', document.querySelector('.nav-item:nth-child(5)'))">
+                                <div class="quick-action-icon" style="background:rgba(245,158,11,0.15)"><i
+                                        class="fas fa-user-plus" style="color:var(--warning)"></i></div>
+                                <div class="quick-action-text">
+                                    <strong>เพิ่มนักเรียน</strong>
+                                    <span>เพิ่มรายชื่อนักเรียนใหม่</span>
+                                </div>
+                                <i class="fas fa-chevron-right"
+                                    style="color:var(--text-muted); margin-left:auto; font-size:11px;"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date info card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title"><i class="fas fa-calendar-alt"></i> ข้อมูลวันนี้</div>
+                        </div>
+                        <div style="text-align:center; padding:20px 0;">
+                            <div style="font-size:42px; font-weight:800; color:var(--accent-blue-bright); line-height:1;"
+                                id="clock-day">—</div>
+                            <div style="font-size:14px; color:var(--text-secondary); margin:8px 0;" id="clock-date">—
+                            </div>
+                            <div style="font-size:28px; font-weight:700; color:var(--text-primary); margin-top:12px;"
+                                id="clock-time">—</div>
+                        </div>
+                        <div class="divider"></div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px;">
+                            <div style="text-align:center;">
+                                <div style="color:var(--text-muted); font-size:10px; margin-bottom:4px;">นักเรียนทั้งหมด
+                                </div>
+                                <div style="font-weight:700; font-size:16px; color:var(--text-primary);"
+                                    id="dash-total">0</div>
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="color:var(--text-muted); font-size:10px; margin-bottom:4px;">วันที่เช็คชื่อ
+                                </div>
+                                <div style="font-weight:700; font-size:16px; color:var(--accent-blue-bright);"
+                                    id="dash-checkin-days">—</div>
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="color:var(--text-muted); font-size:10px; margin-bottom:4px;">อัตราเข้าเรียน
+                                </div>
+                                <div style="font-weight:700; font-size:16px; color:var(--success);" id="dash-rate">—
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE: CHECK-IN -->
+            <div class="page" id="page-checkin">
+                <div class="page-header">
+                    <div class="page-title">
+                        <div class="page-title-icon"><i class="fas fa-clipboard-check"></i></div>
+                        เช็คชื่อนักเรียน
+                    </div>
+                    <div class="page-subtitle">บันทึกการเข้าเรียนประจำวัน</div>
+                </div>
+
+                <div class="card" style="margin-bottom:20px;">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-filter"></i> เลือกวันที่และชั้นเรียน</div>
+                    </div>
+                    <div class="form-row cols-2">
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-calendar"></i> วันที่เช็คชื่อ</label>
+                            <input type="date" class="form-control" id="checkin-date">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-door-open"></i> ชั้นเรียน</label>
+                            <select class="form-control" id="checkin-class" onchange="loadStudentsForCheckin()">
+                                <option value="">— เลือกชั้นเรียน —</option>
+                                <option value="ม.1">ม.1</option>
+                                <option value="ม.2">ม.2</option>
+                                <option value="ม.3">ม.3</option>
+                                <option value="ม.4">ม.4</option>
+                                <option value="ม.5">ม.5</option>
+                                <option value="ม.6">ม.6</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-list"></i> รายชื่อนักเรียน</div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button class="btn btn-secondary" onclick="setAllStatus('present')"
+                                style="font-size:11px; padding:6px 12px;">
+                                <i class="fas fa-check-double"></i> ทุกคนมา
+                            </button>
+                        </div>
+                    </div>
+                    <div id="checkin-table-wrap">
+                        <div class="empty-state">
+                            <i class="fas fa-arrow-up"></i>
+                            <p>กรุณาเลือกชั้นเรียนก่อน<br>เพื่อแสดงรายชื่อนักเรียน</p>
+                        </div>
+                    </div>
+
+                    <div id="checkin-save-section" style="display:none; margin-top:20px;">
+                        <div class="divider"></div>
+                        <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px;">
+                            <span id="checkin-count-info" style="font-size:12px; color:var(--text-muted);"></span>
+                            <button class="btn btn-success btn-lg" onclick="saveAttendance()">
+                                <i class="fas fa-save"></i> บันทึกการเช็คชื่อ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE: STATISTICS -->
+            <div class="page" id="page-statistics">
+                <div class="page-header">
+                    <div class="page-title">
+                        <div class="page-title-icon"><i class="fas fa-chart-bar"></i></div>
+                        สถิติการเข้าเรียน
+                    </div>
+                    <div class="page-subtitle">รายงานสรุปสถิติการเข้าเรียนของนักเรียน</div>
+                </div>
+
+                <!-- summary -->
+                <div class="stats-grid" id="stats-summary-grid">
+                    <div class="stat-card present">
+                        <i class="fas fa-check-circle stat-icon" style="color:var(--success)"></i>
+                        <div class="stat-label"><i class="fas fa-circle" style="color:var(--success)"></i> มาเรียน</div>
+                        <div class="stat-value" id="stat-total-present">0</div>
+                        <div class="stat-desc">ครั้งทั้งหมด</div>
+                    </div>
+                    <div class="stat-card late">
+                        <i class="fas fa-clock stat-icon" style="color:var(--warning)"></i>
+                        <div class="stat-label"><i class="fas fa-circle" style="color:var(--warning)"></i> มาสาย</div>
+                        <div class="stat-value" id="stat-total-late">0</div>
+                        <div class="stat-desc">ครั้งทั้งหมด</div>
+                    </div>
+                    <div class="stat-card leave">
+                        <i class="fas fa-file-alt stat-icon" style="color:var(--info)"></i>
+                        <div class="stat-label"><i class="fas fa-circle" style="color:var(--info)"></i> ลา</div>
+                        <div class="stat-value" id="stat-total-leave">0</div>
+                        <div class="stat-desc">ครั้งทั้งหมด</div>
+                    </div>
+                    <div class="stat-card absent">
+                        <i class="fas fa-times-circle stat-icon" style="color:var(--danger)"></i>
+                        <div class="stat-label"><i class="fas fa-circle" style="color:var(--danger)"></i> ขาด</div>
+                        <div class="stat-value" id="stat-total-absent">0</div>
+                        <div class="stat-desc">ครั้งทั้งหมด</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-table"></i> สถิติรายนักเรียน</div>
+                        <div style="display:flex; gap:8px;">
+                            <select class="form-control" id="stat-class-filter" onchange="renderStatsTable()"
+                                style="width:auto; font-size:12px; padding:6px 12px;">
+                                <option value="">ทุกชั้น</option>
+                                <option value="ม.1">ม.1</option>
+                                <option value="ม.2">ม.2</option>
+                                <option value="ม.3">ม.3</option>
+                                <option value="ม.4">ม.4</option>
+                                <option value="ม.5">ม.5</option>
+                                <option value="ม.6">ม.6</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="stats-table-wrap" id="stats-table-wrap">
+                        <div class="empty-state">
+                            <i class="fas fa-chart-bar"></i>
+                            <p>ยังไม่มีข้อมูลสถิติ<br>กรุณาเช็คชื่อก่อน</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE: ADD STUDENT -->
+            <div class="page" id="page-addstudent">
+                <div class="page-header">
+                    <div class="page-title">
+                        <div class="page-title-icon"><i class="fas fa-user-plus"></i></div>
+                        เพิ่มรายชื่อนักเรียน
+                    </div>
+                    <div class="page-subtitle">เพิ่มข้อมูลนักเรียนใหม่เข้าสู่ระบบ</div>
+                </div>
+
+                <div class="card" style="max-width:560px;">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-user-edit"></i> ข้อมูลนักเรียน</div>
+                    </div>
+
+                    <div class="form-row cols-2">
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-hashtag"></i> เลขที่</label>
+                            <input type="number" class="form-control" id="add-num" placeholder="เช่น 1" min="1"
+                                max="50">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-door-open"></i> ชั้นเรียน</label>
+                            <select class="form-control" id="add-class">
+                                <option value="">— เลือกชั้น —</option>
+                                <option value="ม.1">ม.1</option>
+                                <option value="ม.2">ม.2</option>
+                                <option value="ม.3">ม.3</option>
+                                <option value="ม.4">ม.4</option>
+                                <option value="ม.5">ม.5</option>
+                                <option value="ม.6">ม.6</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:20px;">
+                        <label class="form-label"><i class="fas fa-user"></i> ชื่อ-สกุล</label>
+                        <input type="text" class="form-control" id="add-name" placeholder="เช่น นาย ธนภัทร สุขสวัสดิ์">
+                    </div>
+
+                    <button class="btn btn-primary btn-lg" onclick="addStudent()" style="width:100%;">
+                        <i class="fas fa-plus-circle"></i> เพิ่มนักเรียน
+                    </button>
+                </div>
+            </div>
+
+            <!-- PAGE: STUDENTS LIST -->
+            <div class="page" id="page-students-list">
+                <div class="page-header">
+                    <div class="page-title">
+                        <div class="page-title-icon"><i class="fas fa-users"></i></div>
+                        รายชื่อนักเรียนทั้งหมด
+                    </div>
+                    <div class="page-subtitle">จัดการรายชื่อนักเรียนในระบบ</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fas fa-list-ul"></i> นักเรียนทั้งหมด</div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <select class="form-control" id="list-class-filter" onchange="renderStudentList()"
+                                style="width:auto; font-size:12px; padding:6px 12px;">
+                                <option value="">ทุกชั้น</option>
+                                <option value="ม.1">ม.1</option>
+                                <option value="ม.2">ม.2</option>
+                                <option value="ม.3">ม.3</option>
+                                <option value="ม.4">ม.4</option>
+                                <option value="ม.5">ม.5</option>
+                                <option value="ม.6">ม.6</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="showPage('addstudent', null)"
+                                style="font-size:12px; padding:7px 14px;">
+                                <i class="fas fa-plus"></i> เพิ่ม
+                            </button>
+                        </div>
+                    </div>
+                    <div id="students-list-table-wrap">
+                        <div class="empty-state">
+                            <div class="spinner"></div>
+                            <p>กำลังโหลดข้อมูล...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container"></div>
+
+</body>
+<script src="script.js"></script>
+
+</html>
