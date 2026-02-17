@@ -60,25 +60,22 @@ function showPage(id, navEl) {
 
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
     if (sidebar.classList.contains('open')) {
         closeSidebar();
     } else {
         sidebar.classList.add('open');
-        document.getElementById('sidebar-overlay').classList.add('active');
-        document.body.style.overflow = 'hidden';
+        overlay.classList.add('active');
     }
 }
 
 function closeSidebar() {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('active');
-    document.body.style.overflow = '';
 }
 
-// ปิด sidebar เมื่อกด Escape
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeSidebar();
-});
+// ปิด sidebar เมื่อกด ESC
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
 
 // ===== JSONP HELPER =====
 function jsonpRequest(params) {
@@ -610,7 +607,74 @@ function showToast(msg, type = 'success') {
     setTimeout(() => toast.remove(), 3500);
 }
 
-// ===== SEARCH =====
+// ===== RESET ALL DATA =====
+async function resetAllData() {
+    // ยืนยันครั้งที่ 1
+    const result1 = await Swal.fire({
+        title: '⚠️ รีเซ็ตข้อมูลทั้งหมด?',
+        html: `<div style="color:#94a3b8; font-size:14px; line-height:1.8;">
+            จะลบข้อมูลทั้งหมดออกจากระบบ<br>
+            <b style="color:#ef4444;">นักเรียนทุกคน + ประวัติเช็คชื่อทั้งหมด</b><br>
+            <span style="font-size:12px;">ไม่สามารถกู้คืนได้!</span>
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ใช่ ลบทั้งหมด',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#374151'
+    });
+
+    if (!result1.isConfirmed) return;
+
+    // ยืนยันครั้งที่ 2 กันพลาด
+    const result2 = await Swal.fire({
+        title: 'ยืนยันอีกครั้ง',
+        html: `<div style="color:#ef4444; font-weight:700; font-size:15px;">แน่ใจหรือไม่? ข้อมูลจะหายถาวร!</div>`,
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonText: '🗑️ ยืนยัน ลบเลย',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#374151'
+    });
+
+    if (!result2.isConfirmed) return;
+
+    // แสดง loading
+    Swal.fire({
+        title: 'กำลังรีเซ็ต...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    // ส่งคำสั่งไป Google Sheets
+    try {
+        await jsonpRequest({ action: 'resetAll' });
+    } catch (e) {
+        console.warn('GAS reset failed, clearing locally:', e);
+    }
+
+    // ล้าง local data
+    appData.students = [];
+    appData.attendance = {};
+    appData.loaded = false;
+
+    // รีเซ็ต UI
+    updateBadge();
+    updateDashboard();
+    renderStudentList();
+    renderStatsTable();
+
+    Swal.fire({
+        icon: 'success',
+        title: 'รีเซ็ตเรียบร้อย!',
+        text: 'ข้อมูลทั้งหมดถูกลบออกแล้ว',
+        timer: 2000,
+        showConfirmButton: false
+    });
+}
 function handleSearch(val) {
     if (val.length > 1) {
         const results = appData.students.filter(s => s.name.includes(val));
