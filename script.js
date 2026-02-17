@@ -425,24 +425,53 @@ function renderStudentList() {
         return;
     }
 
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const todayAtt = appData.attendance[todayStr] || [];
+
     let html = `
     <table class="stats-table">
       <thead>
         <tr>
           <th>เลขที่</th>
           <th>ชื่อ-สกุล</th>
-          <th>ชั้นเรียน</th>
-          <th style="text-align:right; padding-right:20px;">จัดการ</th>
+          <th>ชั้น</th>
+          <th style="text-align:center;">วันนี้</th>
+          <th style="text-align:right; padding-right:16px;">ลบ</th>
         </tr>
       </thead>
       <tbody>`;
 
     students.forEach(s => {
+        const rec = todayAtt.find(a => a.student_id === s.id);
+        const status = rec ? rec.status : null;
+
+        const activePresent = status === 'present';
+        const activeAbsent  = status === 'absent';
+
         html += `
-      <tr>
+      <tr id="row-${s.id}">
         <td><span class="student-num">${s.number || '—'}</span></td>
         <td style="font-weight:500">${s.name}</td>
         <td><span style="background:rgba(59,130,246,0.15);color:var(--accent-blue-bright);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${s.class}</span></td>
+        <td style="text-align:center;">
+          <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+            <button id="btn-present-${s.id}" onclick="quickStatus('${s.id}','present','${todayStr}')"
+              style="background:${activePresent ? 'var(--success)' : 'rgba(16,185,129,0.1)'};
+                     border:1px solid rgba(16,185,129,0.5);
+                     color:${activePresent ? '#fff' : 'var(--success)'};
+                     padding:5px 12px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">
+              <i class="fas fa-check"></i> มา
+            </button>
+            <button id="btn-absent-${s.id}" onclick="quickStatus('${s.id}','absent','${todayStr}')"
+              style="background:${activeAbsent ? 'var(--danger)' : 'rgba(239,68,68,0.1)'};
+                     border:1px solid rgba(239,68,68,0.4);
+                     color:${activeAbsent ? '#fff' : 'var(--danger)'};
+                     padding:5px 12px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">
+              <i class="fas fa-times"></i> ไม่มา
+            </button>
+          </div>
+        </td>
         <td style="text-align:right; padding-right:16px;">
           <button onclick="deleteStudent('${s.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;">
             <i class="fas fa-trash"></i>
@@ -675,12 +704,100 @@ async function resetAllData() {
         showConfirmButton: false
     });
 }
-function handleSearch(val) {
-    if (val.length > 1) {
-        const results = appData.students.filter(s => s.name.includes(val));
-        showToast(`พบ ${results.length} คนที่ตรงกับ "${val}"`, 'success');
+// ===== QUICK STATUS (มา/ไม่มา จากหน้ารายชื่อ) =====
+async function quickStatus(studentId, status, date) {
+    const student = appData.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    // อัปเดต local
+    if (!appData.attendance[date]) appData.attendance[date] = [];
+    const idx = appData.attendance[date].findIndex(a => a.student_id === studentId);
+    const rec = { student_id: studentId, status, name: student.name, class: student.class, number: student.number };
+    if (idx >= 0) appData.attendance[date][idx] = rec;
+    else appData.attendance[date].push(rec);
+
+    // อัปเดตปุ่มทันทีโดยไม่ render ใหม่ทั้งหมด
+    const btnP = document.getElementById(`btn-present-${studentId}`);
+    const btnA = document.getElementById(`btn-absent-${studentId}`);
+    if (btnP) {
+        btnP.style.background = status === 'present' ? 'var(--success)' : 'rgba(16,185,129,0.1)';
+        btnP.style.color = status === 'present' ? '#fff' : 'var(--success)';
     }
+    if (btnA) {
+        btnA.style.background = status === 'absent' ? 'var(--danger)' : 'rgba(239,68,68,0.1)';
+        btnA.style.color = status === 'absent' ? '#fff' : 'var(--danger)';
+    }
+
+    showToast(`${student.name} — ${status === 'present' ? '✅ มา' : '❌ ไม่มา'}`, 'success');
+    updateDashboard();
+
+    // ส่งไป Google Sheets
+    try {
+        await jsonpRequest({ action: 'saveAttendance', date, records: [rec] });
+    } catch(e) { console.warn('sync failed', e); }
 }
+
+// ===== SEARCH AUTOCOMPLETE =====
+function handleSearch(val) {
+    const drop = document.getElementById('search-dropdown');
+    if (!drop) return;
+    if (val.length < 1) { drop.style.display = 'none'; return; }
+
+    const results = appData.students.filter(s =>
+        s.name.includes(val) || (s.number && String(s.number).includes(val))
+    ).slice(0, 8);
+
+    if (results.length === 0) {
+        drop.style.display = 'none';
+        return;
+    }
+
+    drop.innerHTML = results.map(s => `
+        <div onclick="selectSearchResult('${s.id}')"
+             style="padding:10px 16px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(59,130,246,0.1); transition:background 0.15s;"
+             onmouseover="this.style.background='rgba(59,130,246,0.1)'"
+             onmouseout="this.style.background='transparent'">
+            <div style="width:30px;height:30px;border-radius:50%;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent-blue-bright);flex-shrink:0;">
+                ${s.number || '—'}
+            </div>
+            <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${s.name.replace(val, `<span style="color:var(--accent-blue-bright)">${val}</span>`)}</div>
+                <div style="font-size:11px;color:var(--text-muted);">ชั้น ${s.class}</div>
+            </div>
+            <i class="fas fa-search" style="margin-left:auto;color:var(--text-muted);font-size:11px;"></i>
+        </div>
+    `).join('');
+
+    drop.style.display = 'block';
+}
+
+function selectSearchResult(studentId) {
+    const student = appData.students.find(s => s.id === studentId);
+    if (!student) return;
+    document.getElementById('globalSearch').value = student.name;
+    closeSearchDrop();
+    // ไปหน้ารายชื่อนักเรียน และ filter ชั้นเรียน
+    showPage('students-list', document.querySelector('.nav-item:nth-child(6)'));
+    setTimeout(() => {
+        const filter = document.getElementById('list-class-filter');
+        if (filter) { filter.value = student.class; renderStudentList(); }
+        // highlight แถวนักเรียน
+        setTimeout(() => {
+            const row = document.getElementById(`row-${studentId}`);
+            if (row) {
+                row.style.background = 'rgba(59,130,246,0.15)';
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => row.style.background = '', 2000);
+            }
+        }, 300);
+    }, 100);
+}
+
+function closeSearchDrop() {
+    const drop = document.getElementById('search-dropdown');
+    if (drop) drop.style.display = 'none';
+}
+
 
 // ===== EXPORT =====
 function exportData() {
