@@ -12,7 +12,7 @@ let appData = {
 window.onload = () => {
     setTodayDate();
     startClock();
-    loadAllData(); 
+    loadAllData();
 };
 
 function setTodayDate() {
@@ -76,7 +76,7 @@ function closeSidebar() {
 }
 
 // ปิด sidebar เมื่อกด Escape
-document.addEventListener('keydown', function (e) {
+document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeSidebar();
 });
 
@@ -634,3 +634,4 @@ function exportData() {
     a.href = url; a.download = 'attendance_export.csv'; a.click();
     showToast('ส่งออกข้อมูลสำเร็จ', 'success');
 }
+
