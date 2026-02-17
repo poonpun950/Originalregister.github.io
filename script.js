@@ -1,6 +1,6 @@
 
 // ===== CONFIG =====
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIkaMbp1_vXgYNcJlRliMA3cV9DjgQO6v5LL-qZAaQR4ex4fWCVuhbrYErcEi8hn41-Q/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwfRt28YnbL76o-W9mNqC87VIfUIeqRxFS4eAlADGacxmHDZwd1mEws3B6Da31VNPc/exec';
 
 // ===== DATA STORE =====
 let appData = {
@@ -643,6 +643,7 @@ function exportData() {
   a.href = url; a.download = 'attendance_export.csv'; a.click();
   showToast('ส่งออกข้อมูลสำเร็จ', 'success');
 }
+
 
 
 
