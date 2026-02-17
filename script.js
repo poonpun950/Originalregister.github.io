@@ -1,5 +1,5 @@
 // ===== CONFIG =====
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwfRt28YnbL76o-W9mNqC87VIfUIeqRxFS4eAlADGacxmHDZwd1mEws3B6Da31VNPc/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIkaMbp1_vXgYNcJlRliMA3cV9DjgQO6v5LL-qZAaQR4ex4fWCVuhbrYErcEi8hn41-Q/exec';
 
 // ===== DATA STORE =====
 let appData = {
@@ -12,7 +12,7 @@ let appData = {
 window.onload = () => {
     setTodayDate();
     startClock();
-    loadAllData();
+    loadAllData(); 
 };
 
 function setTodayDate() {
@@ -75,7 +75,10 @@ function closeSidebar() {
     document.body.style.overflow = '';
 }
 
-// คลิก overlay เพื่อปิด sidebar — handled by onclick on the div already
+// ปิด sidebar เมื่อกด Escape
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeSidebar();
+});
 
 // ===== JSONP HELPER =====
 function jsonpRequest(params) {
