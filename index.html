@@ -30,7 +30,6 @@
         <div class="nav-search" style="position:relative;">
             <i class="fas fa-search"></i>
             <input type="text" placeholder="ค้นหานักเรียน..." id="globalSearch" onkeyup="handleSearch(this.value)" onblur="setTimeout(()=>closeSearchDrop(),200)" autocomplete="off">
-            <div id="search-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:#1a2035; border:1px solid var(--border-blue); border-radius:10px; margin-top:4px; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,0.5); max-height:280px; overflow-y:auto;"></div>
         </div>
         <div class="nav-actions">
             <button class="nav-btn" onclick="loadStudentsForStats()">
@@ -45,8 +44,11 @@
     <!-- LAYOUT -->
     <div class="layout">
 
-        <!-- OVERLAY -->
-        <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+    <!-- Search Dropdown (fixed position, ไม่ถูก clip โดย nav) -->
+    <div id="search-dropdown" style="display:none; position:fixed; background:#1a2035; border:1px solid var(--border-blue); border-radius:10px; margin-top:4px; z-index:9999; box-shadow:0 8px 32px rgba(0,0,0,0.7); max-height:300px; overflow-y:auto;"></div>
+
+    <!-- SIDEBAR OVERLAY -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
         <!-- SIDEBAR -->
         <aside class="sidebar" id="sidebar">
