@@ -1,5 +1,5 @@
 // ===== CONFIG =====
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwjKiX1TTINnn10lk0HLtHPVzrUbtk_oBjHzcOt_af0qtBBuMHLJZJvtFJKM4f9OZUvIA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwtpOnQtJDMde_AeTr8enKHPHBrN25RZYmlkYPayKJRlYU7zicZNDGx6aoMD7Jf0WOt/exec';
 
 // ===== DATA STORE =====
 let appData = {
