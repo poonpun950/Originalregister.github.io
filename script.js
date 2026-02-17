@@ -1,5 +1,5 @@
 // ===== CONFIG =====
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwtpOnQtJDMde_AeTr8enKHPHBrN25RZYmlkYPayKJRlYU7zicZNDGx6aoMD7Jf0WOt/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwPltxqGP_-x93V6u8Or-o56sAvzDq4feMfDdrUUzqevkZex02sByg2sjKqLLhDuO5j/exec';
 
 // ===== DATA STORE =====
 let appData = {
@@ -422,57 +422,50 @@ function renderStudentList() {
     const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     const todayAtt = appData.attendance[todayStr] || [];
 
-    let html = `
-    <table class="stats-table">
-      <thead>
-        <tr>
-          <th>เลขที่</th>
-          <th>ชื่อ-สกุล</th>
-          <th>ชั้น</th>
-          <th style="text-align:center;">วันนี้</th>
-          <th style="text-align:right; padding-right:16px;">ลบ</th>
-        </tr>
-      </thead>
-      <tbody>`;
+    const btnDefs = [
+        { st:'present', label:'มา',  icon:'fa-check',    color:'var(--success)', offBg:'rgba(16,185,129,0.1)',  border:'rgba(16,185,129,0.5)' },
+        { st:'late',    label:'สาย', icon:'fa-clock',    color:'var(--warning)', offBg:'rgba(245,158,11,0.1)',  border:'rgba(245,158,11,0.5)' },
+        { st:'leave',   label:'ลา',  icon:'fa-file-alt', color:'var(--info)',    offBg:'rgba(6,182,212,0.1)',   border:'rgba(6,182,212,0.5)'  },
+        { st:'absent',  label:'ขาด', icon:'fa-times',    color:'var(--danger)',  offBg:'rgba(239,68,68,0.1)',   border:'rgba(239,68,68,0.4)'  },
+    ];
+
+    // ใช้ card layout — ไม่ใช้ table เพื่อรองรับมือถือ
+    let html = `<div style="display:flex;flex-direction:column;gap:8px;padding:4px 0;">`;
 
     students.forEach(s => {
         const rec = todayAtt.find(a => a.student_id === s.id);
         const status = rec ? rec.status : null;
 
-        const btns = [
-            { st:'present', label:'มา',   icon:'fa-check',    color:'var(--success)', offBg:'rgba(16,185,129,0.1)',  border:'rgba(16,185,129,0.5)' },
-            { st:'late',    label:'สาย',  icon:'fa-clock',    color:'var(--warning)', offBg:'rgba(245,158,11,0.1)',  border:'rgba(245,158,11,0.5)' },
-            { st:'leave',   label:'ลา',   icon:'fa-file-alt', color:'var(--info)',    offBg:'rgba(6,182,212,0.1)',   border:'rgba(6,182,212,0.5)'  },
-            { st:'absent',  label:'ขาด', icon:'fa-times',    color:'var(--danger)',  offBg:'rgba(239,68,68,0.1)',   border:'rgba(239,68,68,0.4)'  },
-        ].map(b => {
+        const btns = btnDefs.map(b => {
             const active = status === b.st;
-            return `<button id="btn-${b.st}-${s.id}" onclick="quickStatus('${s.id}','${b.st}','${todayStr}')"
-                style="background:${active ? b.color : b.offBg};
+            return `<button id="btn-${b.st}-${s.id}" onclick="quickStatusLocked('${s.id}','${b.st}','${todayStr}')"
+                style="flex:1;min-width:0;background:${active ? b.color : b.offBg};
                        border:1px solid ${b.border};
                        color:${active ? '#fff' : b.color};
-                       padding:5px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit;font-weight:${active?'700':'600'};">
-                <i class="fas ${b.icon}"></i> ${b.label}
+                       padding:7px 4px;border-radius:8px;font-size:12px;
+                       cursor:pointer;font-family:inherit;font-weight:${active?'700':'600'};
+                       display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;">
+                <i class="fas ${b.icon}"></i>${b.label}
             </button>`;
         }).join('');
 
         html += `
-      <tr id="row-${s.id}">
-        <td><span class="student-num">${s.number || '—'}</span></td>
-        <td style="font-weight:500">${s.name}</td>
-        <td><span style="background:rgba(59,130,246,0.15);color:var(--accent-blue-bright);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${s.class}</span></td>
-        <td>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        <div id="row-${s.id}" style="background:var(--bg-card);border:1px solid var(--border-blue);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="student-num">${s.number || '—'}</span>
+            <span style="font-weight:600;font-size:14px;flex:1;">${s.name}</span>
+            <span style="background:rgba(59,130,246,0.15);color:var(--accent-blue-bright);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${s.class}</span>
+            <button onclick="deleteStudent('${s.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);padding:5px 9px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+          <div style="display:flex;gap:6px;">
             ${btns}
           </div>
-        </td>
-        <td style="text-align:right; padding-right:16px;">
-          <button onclick="deleteStudent('${s.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>`;
+        </div>`;
     });
-    html += '</tbody></table>';
+
+    html += `</div>`;
     wrap.innerHTML = html;
 }
 
@@ -742,33 +735,40 @@ async function quickStatus(studentId, status, date) {
 // ===== SEARCH AUTOCOMPLETE =====
 function handleSearch(val) {
     const drop = document.getElementById('search-dropdown');
-    if (!drop) return;
+    const input = document.getElementById('globalSearch');
+    if (!drop || !input) return;
+
     if (val.length < 1) { drop.style.display = 'none'; return; }
 
     const results = appData.students.filter(s =>
         s.name.includes(val) || (s.number && String(s.number).includes(val))
     ).slice(0, 8);
 
-    if (results.length === 0) {
-        drop.style.display = 'none';
-        return;
-    }
+    if (results.length === 0) { drop.style.display = 'none'; return; }
 
-    drop.innerHTML = results.map(s => `
+    // คำนวณตำแหน่ง input แล้ววาง dropdown ใต้มัน
+    const rect = input.getBoundingClientRect();
+    drop.style.top    = (rect.bottom + 4) + 'px';
+    drop.style.left   = rect.left + 'px';
+    drop.style.width  = rect.width + 'px';
+
+    drop.innerHTML = results.map(s => {
+        const highlighted = s.name.replace(val, `<span style="color:var(--accent-blue-bright);font-weight:700;">${val}</span>`);
+        return `
         <div onclick="selectSearchResult('${s.id}')"
-             style="padding:10px 16px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(59,130,246,0.1); transition:background 0.15s;"
-             onmouseover="this.style.background='rgba(59,130,246,0.1)'"
+             style="padding:10px 16px; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(59,130,246,0.1);"
+             onmouseover="this.style.background='rgba(59,130,246,0.12)'"
              onmouseout="this.style.background='transparent'">
             <div style="width:30px;height:30px;border-radius:50%;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent-blue-bright);flex-shrink:0;">
                 ${s.number || '—'}
             </div>
             <div>
-                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${s.name.replace(val, `<span style="color:var(--accent-blue-bright)">${val}</span>`)}</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${highlighted}</div>
                 <div style="font-size:11px;color:var(--text-muted);">ชั้น ${s.class}</div>
             </div>
-            <i class="fas fa-search" style="margin-left:auto;color:var(--text-muted);font-size:11px;"></i>
-        </div>
-    `).join('');
+            <i class="fas fa-arrow-right" style="margin-left:auto;color:var(--text-muted);font-size:11px;"></i>
+        </div>`;
+    }).join('');
 
     drop.style.display = 'block';
 }
