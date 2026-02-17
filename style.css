@@ -185,7 +185,7 @@ body::before {
 /* ====== SIDEBAR ====== */
 .sidebar {
     width: var(--sidebar-width);
-    background: var(--bg-secondary);
+    background: #161b27;
     border-right: 1px solid var(--border-blue);
     padding: 20px 12px;
     position: fixed;
@@ -1070,13 +1070,13 @@ body::before {
     border-color: var(--accent-blue);
 }
 
-/* ====== SIDEBAR OVERLAY — ใช้ div จริงแทน body::after เพื่อ iOS Safari ====== */
+/* ====== SIDEBAR OVERLAY ====== */
 #sidebar-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 150;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 250;
 }
 
 #sidebar-overlay.active {
@@ -1096,27 +1096,24 @@ body::before {
         display: none;
     }
 
-    /* Sidebar slides off-screen by default */
+    /* Sidebar slides off-screen by default — solid, no blur, no transparency */
     .sidebar {
-        -webkit-transform: translate3d(-100%, 0, 0);
-        transform: translate3d(-100%, 0, 0);
-        -webkit-transition: -webkit-transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateX(-100%);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 300;
-        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
-        /* iOS Safari — ป้องกัน blur เมื่อใช้ transform */
-        -webkit-backface-visibility: hidden;
-        backface-visibility: hidden;
-        -webkit-perspective: 1000px;
-        perspective: 1000px;
-        will-change: transform;
+        background: #161b27 !important;
+        box-shadow: 4px 0 32px rgba(0, 0, 0, 0.8);
+        /* ป้องกัน blur บน iOS */
+        -webkit-transform: translateX(-100%);
+        -webkit-transition: -webkit-transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         isolation: isolate;
+        will-change: transform;
     }
 
     /* Sidebar slides in when .open is added */
     .sidebar.open {
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
+        transform: translateX(0) !important;
+        -webkit-transform: translateX(0) !important;
     }
 
     /* Main takes full width — no sidebar offset */
